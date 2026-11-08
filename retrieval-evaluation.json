@@ -1,0 +1,110 @@
+{
+  "index": {
+    "ready": true,
+    "vector_ready": true,
+    "fingerprint": "e8f359434015031aae4bf996bdfafd66f54fc98d0e6f8ce5c89af84325a54eeb",
+    "backend": "fastembed",
+    "model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "dimension": "384",
+    "count": "431"
+  },
+  "cases": [
+    {
+      "query": "黄埔属于哪个区",
+      "expected": [
+        "黄埔"
+      ],
+      "method": "hybrid vector + lexical + geography",
+      "rank": 1,
+      "elapsed_ms": 669,
+      "retrieved": [
+        "黄埔地名与天气查询范围",
+        "Castle Peak Monastery",
+        "Southorn Playground",
+        "Aberdeen Country Park",
+        "Mo Tat (Old Village)"
+      ]
+    },
+    {
+      "query": "雨天带小孩去室内玩",
+      "expected": [
+        "科学馆"
+      ],
+      "method": "hybrid vector + lexical + geography",
+      "rank": 1,
+      "elapsed_ms": 14,
+      "retrieved": [
+        "香港科学馆：雨天室内参观",
+        "雷暴警告：短期风险信息",
+        "Kowloon Park"
+      ]
+    },
+    {
+      "query": "wheelchair access museum",
+      "expected": [
+        "无障碍"
+      ],
+      "method": "hybrid vector + lexical + geography",
+      "rank": 1,
+      "elapsed_ms": 13,
+      "retrieved": [
+        "香港历史博物馆：无障碍设施",
+        "Hong Kong Wetland Park",
+        "The Bookworm Cafe",
+        "Tian Tan Buddha",
+        "Hong Kong Science Museum"
+      ]
+    },
+    {
+      "query": "Hong Kong art museum",
+      "expected": [
+        "Hong Kong Museum of Art"
+      ],
+      "method": "hybrid vector + lexical + geography",
+      "rank": 1,
+      "elapsed_ms": 14,
+      "retrieved": [
+        "Hong Kong Museum of Art",
+        "University Museum and Art Gallery",
+        "Hong Kong Heritage Museum",
+        "The Art Museum, The Chinese University of Hong Kong",
+        "Hong Kong Maritime Museum"
+      ]
+    },
+    {
+      "query": "远足天气查询",
+      "expected": [
+        "远足"
+      ],
+      "method": "hybrid vector + lexical + geography",
+      "rank": 1,
+      "elapsed_ms": 14,
+      "retrieved": [
+        "远足规划与天气服务",
+        "黄埔地名与天气查询范围",
+        "香港科学馆：雨天室内参观",
+        "Maclehose Trail",
+        "雷暴警告：短期风险信息"
+      ]
+    },
+    {
+      "query": "tea ware museum",
+      "expected": [
+        "Flagstaff House Museum of Tea Ware"
+      ],
+      "method": "hybrid vector + lexical + geography",
+      "rank": 1,
+      "elapsed_ms": 13,
+      "retrieved": [
+        "Flagstaff House Museum of Tea Ware",
+        "Bridal Tea House",
+        "University Museum and Art Gallery",
+        "Sam Tung Uk Museum",
+        "Hong Kong Museum of Art"
+      ]
+    }
+  ],
+  "hit_at_5": 1.0,
+  "mrr_at_5": 1.0,
+  "notes": "Six hand-authored smoke cases only, not a representative benchmark or proof of answer accuracy."
+}

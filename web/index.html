@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#183e35" />
+    <title>港行 · 香港天气与出行助手</title>
+    <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css" />
+    <link rel="stylesheet" href="/static/styles.css?v=20261109v" />
+    <script src="/static/vendor/leaflet/leaflet.js" defer></script>
+    <script src="/static/i18n.js?v=20261109v" defer></script>
+    <script src="/static/app.js?v=20261109v" defer></script>
+  </head>
+  <body class="chat-view">
+    <svg
+      class="icon-sprite"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <defs>
+        <symbol id="i-grid" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="7" height="7" rx="2" />
+          <rect x="14" y="3" width="7" height="7" rx="2" />
+          <rect x="3" y="14" width="7" height="7" rx="2" />
+          <rect x="14" y="14" width="7" height="7" rx="2" />
+        </symbol>
+        <symbol id="i-cloud" viewBox="0 0 24 24">
+          <path
+            d="M6 18a4 4 0 1 1 0-8 6 6 0 0 1 11.6-1.5A4.8 4.8 0 1 1 18 18Z"
+          />
+        </symbol>
+        <symbol id="i-food" viewBox="0 0 24 24">
+          <path
+            d="M5 3v6m4-6v6M3 3v5a4 4 0 0 0 8 0V3M7 12v9M18 3c-3 2-4 6-3 10h5V3h-2Zm2 10v8"
+          />
+        </symbol>
+        <symbol id="i-compass" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" />
+          <path d="m16 8-2.5 5.5L8 16l2.5-5.5L16 8Z" />
+        </symbol>
+        <symbol id="i-train" viewBox="0 0 24 24">
+          <rect x="5" y="3" width="14" height="15" rx="4" />
+          <path d="M5 10h14M12 3v7M7 21l2-3m8 3-2-3M8 14h1m6 0h1" />
+        </symbol>
+        <symbol id="i-robot" viewBox="0 0 24 24">
+          <path d="M12 5V2" />
+          <circle cx="12" cy="2" r="1.3" fill="currentColor" stroke="none" />
+          <rect x="4" y="6" width="16" height="14" rx="4" />
+          <path d="M4 12H2.5m17.5 0H20" />
+          <circle cx="9" cy="12" r="1.5" fill="currentColor" stroke="none" />
+          <circle cx="15" cy="12" r="1.5" fill="currentColor" stroke="none" />
+          <path d="M9 16.5h6" />
+        </symbol>
+        <symbol id="i-pin" viewBox="0 0 24 24">
+          <path d="M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0Z" />
+          <circle cx="12" cy="10" r="2.5" />
+        </symbol>
+        <symbol id="i-arrow" viewBox="0 0 24 24">
+          <path d="M4 12h16m-6-6 6 6-6 6" />
+        </symbol>
+        <symbol id="i-clock" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v5l3 2" />
+        </symbol>
+        <symbol id="i-download" viewBox="0 0 24 24">
+          <path d="M12 3v12m-4-4 4 4 4-4M4 16v5h16v-5" />
+        </symbol>
+        <symbol id="i-link" viewBox="0 0 24 24">
+          <path
+            d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2"
+          />
+        </symbol>
+        <symbol id="i-check" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" />
+          <path d="m8 12 3 3 5-6" />
+        </symbol>
+        <symbol id="i-search" viewBox="0 0 24 24">
+          <circle cx="10" cy="10" r="6" />
+          <path d="m15 15 6 6" />
+        </symbol>
+        <symbol id="i-refresh" viewBox="0 0 24 24">
+          <path d="M20 7v5h-5M4 17v-5h5" />
+          <path d="M5.5 7a8 8 0 0 1 13-2l1.5 2M4 17l1.5 2a8 8 0 0 0 13-2" />
+        </symbol>
+      </defs>
+    </svg>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="/" aria-label="港行首页"
+          ><span class="brand-mark">港</span
+          ><span>港行<small>HONG KONG, YOUR WAY</small></span></a
+        >
+        <p class="nav-caption">探索这座城市</p>
+        <nav class="main-nav" aria-label="主要功能">
+          <button type="button" class="nav-item" data-view="overview">
+            <svg><use href="#i-grid" /></svg>出行概览
+          </button>
+          <button type="button" class="nav-item" data-view="weather">
+            <svg><use href="#i-cloud" /></svg>天气与预报
+          </button>
+          <button type="button" class="nav-item" data-view="food">
+            <svg><use href="#i-food" /></svg>附近美食
+          </button>
+          <button type="button" class="nav-item" data-view="attractions">
+            <svg><use href="#i-compass" /></svg>景点探索
+          </button>
+          <button type="button" class="nav-item" data-view="transport">
+            <svg><use href="#i-train" /></svg>交通与路线
+          </button>
+          <button type="button" class="nav-item" data-view="knowledge">
+            <svg><use href="#i-search" /></svg>出行指南
+          </button>
+          <span class="nav-divider"></span>
+          <button
+            type="button"
+            class="nav-item active"
+            data-view="chat"
+            aria-current="page"
+          >
+            <svg><use href="#i-robot" /></svg>出行助手
+          </button>
+        </nav>
+        <div class="sidebar-note">
+          <span class="sidebar-location">22° N · 114° E</span
+          ><strong>香港，慢慢逛。</strong>
+          <p>天气 · 街角小店 · 下一站</p>
+        </div>
+        <div class="connection">
+          <span class="status-dot" id="connection-dot"></span>
+          <div>
+            <strong id="connection-text">正在连接服务</strong
+            ><small id="tool-count">香港天气与出行</small>
+          </div>
+          <button
+            id="refresh-status"
+            class="icon-button"
+            title="重新检查服务"
+            aria-label="重新检查服务"
+          >
+            <svg><use href="#i-refresh" /></svg>
+          </button>
+        </div>
+      </aside>
+      <main class="main-content">
+        <header class="topbar">
+          <div class="breadcrumb">
+            我的香港 <span>/</span> <strong id="page-label">出行助手</strong>
+          </div>
+          <div class="topbar-actions">
+            <div
+              class="language-switch"
+              role="group"
+              aria-label="Language / 语言"
+            >
+              <button type="button" data-language="zh" aria-pressed="true">
+                中文
+              </button>
+              <button type="button" data-language="en" aria-pressed="false">
+                EN
+              </button>
+            </div>
+            <div class="local-time">
+              <span class="time-dot"></span
+              ><span id="hong-kong-date">香港时间</span>
+            </div>
+          </div>
+        </header>
+        <section class="hero" aria-labelledby="hero-title" hidden>
+          <div class="hero-copy">
+            <div class="eyebrow"><span></span> HONG KONG · EVERY DAY</div>
+            <h1 id="hero-title">今天的香港，<br />想去哪一站？</h1>
+            <p id="hero-description">查查天气，找家餐厅，看看怎么去。</p>
+            <div class="hero-footnote">
+              <span>天气</span><b>·</b><span>美食</span><b>·</b><span>景点</span
+              ><b>·</b><span>地铁</span>
+            </div>
+          </div>
+          <div class="city-art" aria-hidden="true">
+            <svg viewBox="0 0 440 245" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="sky" x2="0" y2="1">
+                  <stop stop-color="#f6d9a6" />
+                  <stop offset="1" stop-color="#f5ead0" />
+                </linearGradient>
+              </defs>
+              <circle cx="280" cy="89" r="71" fill="url(#sky)" />
+              <path
+                d="M26 185c31-35 54-51 88-48 38 2 54 28 77 27 34-2 51-47 93-38 34 7 56 47 113 43v27H26Z"
+                fill="#cfddd1"
+              />
+              <path
+                d="M72 188v-65h29v65m13 0V99h33v89m9 0v-42h29v42m77 0V74l12-13 10 13v114m17 0v-64h35v64m12 0V94h26v94"
+                fill="#93b3a4"
+              />
+              <path
+                d="M181 188V96l15-19 15 19v92m-23-91V73h15v24m-8-23V60m25 128V54l13-19 13 19v134M225 56h16m-16 16h16m-16 16h16m-16 16h16m-16 16h16m-16 16h16m-16 16h16"
+                stroke="#315e4d"
+                stroke-width="2"
+                fill="#dbe8db"
+              />
+              <path
+                d="M181 107h29m-29 12h29m-29 12h29m-29 12h29m-29 12h29m-29 12h29"
+                stroke="#739982"
+                stroke-width="2"
+              />
+              <path
+                d="M8 190h414m-391 15c45-4 70 5 110 0m29 13c50-5 73 5 116 0m-38-15c62-4 93 5 157 0m-350 27c47-3 75 3 121 0m131 1c32-4 57 2 79 0"
+                stroke="#88aaa0"
+                stroke-width="2"
+                fill="none"
+                stroke-linecap="round"
+              />
+              <path
+                d="m105 179 19-37 2 37Z"
+                fill="#f8f6ea"
+                stroke="#315e4d"
+                stroke-width="1.5"
+              />
+              <path d="m91 180 45 1-7 8h-31Z" fill="#315e4d" />
+              <path
+                d="M339 60q8-9 16 0 8-9 16 0m-41-20q5-6 10 0 5-6 10 0"
+                stroke="#587f6d"
+                stroke-width="2"
+                fill="none"
+                stroke-linecap="round"
+              /></svg
+            ><span class="art-caption">维港两岸，街巷之间。</span>
+          </div>
+        </section>
+        <section id="query-workspace" aria-labelledby="workspace-title" hidden>
+          <div class="section-heading">
+            <div>
+              <span class="section-kicker" id="form-kicker"
+                >A LOOK AT THE SKY</span
+              >
+              <h2 id="workspace-title">出门前，看看天</h2>
+            </div>
+          </div>
+          <form id="query-form" class="query-panel">
+            <div id="transport-modes" class="segmented-control" hidden>
+              <button type="button" data-transport="map">步行／驾车</button>
+              <button type="button" data-transport="route" class="selected">
+                港铁路线</button
+              ><button type="button" data-transport="mtr">列车到站</button>
+            </div>
+            <div class="form-grid" id="form-fields"></div>
+            <div class="form-bottom">
+              <div id="form-extra" class="form-extra"></div>
+              <button type="submit" id="query-button" class="primary-button">
+                <span id="query-button-text">查询天气</span>
+                ><svg><use href="#i-arrow" /></svg>
+              </button>
+            </div>
+            <p class="form-note" id="form-note">
+              香港天文台资料，观测时间随结果显示。
+            </p>
+          </form>
+          <div
+            id="query-progress"
+            class="query-progress"
+            role="status"
+            aria-live="polite"
+            hidden
+          >
+            <span class="spinner"></span
+            ><span id="progress-label">正在向数据来源查询，请稍候…</span
+            ><button type="button" id="cancel-query" class="text-button">
+              取消显示
+            </button>
+          </div>
+          <section id="results-section" aria-labelledby="results-title">
+            <div class="section-heading results-heading">
+              <h2 id="results-title">从这里开始</h2>
+              <div class="result-actions">
+                <span id="result-meta"></span
+                ><button
+                  type="button"
+                  id="export-results"
+                  class="secondary-button"
+                  hidden
+                >
+                  <svg><use href="#i-download" /></svg>导出结果
+                </button>
+              </div>
+            </div>
+            <div id="result-content" aria-live="polite">
+              <div class="welcome-grid">
+                <button
+                  type="button"
+                  class="welcome-card"
+                  data-shortcut="weather"
+                >
+                  <span class="feature-icon sky"
+                    ><svg><use href="#i-cloud" /></svg></span
+                  ><span class="card-index">01 / WEATHER</span>
+                  <h3>出门前，看看天</h3>
+                  <p>当前气温、未来预报与天气提醒。</p>
+                  <span class="card-link"
+                    >查看天气 <svg><use href="#i-arrow" /></svg
+                  ></span></button
+                ><button
+                  type="button"
+                  class="welcome-card"
+                  data-shortcut="food"
+                >
+                  <span class="feature-icon peach"
+                    ><svg><use href="#i-food" /></svg></span
+                  ><span class="card-index">02 / TASTE</span>
+                  <h3>附近有什么好吃的</h3>
+                  <p>看看附近美食的地址和距离。</p>
+                  <span class="card-link"
+                    >寻找餐厅 <svg><use href="#i-arrow" /></svg
+                  ></span></button
+                ><button
+                  type="button"
+                  class="welcome-card"
+                  data-shortcut="attractions"
+                >
+                  <span class="feature-icon lagoon"
+                    ><svg><use href="#i-compass" /></svg></span
+                  ><span class="card-index">03 / SEE</span>
+                  <h3>找个值得去的地方</h3>
+                  <p>发现附近景点。出发前请确认开放时间。</p>
+                  <span class="card-link"
+                    >发现景点 <svg><use href="#i-arrow" /></svg
+                  ></span></button
+                ><button
+                  type="button"
+                  class="welcome-card"
+                  data-shortcut="transport"
+                >
+                  <span class="feature-icon sage"
+                    ><svg><use href="#i-train" /></svg></span
+                  ><span class="card-index">04 / MOVE</span>
+                  <h3>下一站，怎么走</h3>
+                  <p>查港铁换乘，看看还有多久到站。</p>
+                  <span class="card-link"
+                    >查询地铁 <svg><use href="#i-arrow" /></svg
+                  ></span>
+                </button>
+              </div>
+              <div class="empty-footnote">
+                <svg><use href="#i-pin" /></svg>输入目的地，看看附近有什么。
+              </div>
+            </div>
+          </section>
+        </section>
+        <section id="chat-workspace" aria-labelledby="chat-title">
+          <div class="section-heading">
+            <div>
+              <span class="section-kicker">YOUR LOCAL COMPANION</span>
+              <h2 id="chat-title">下一站，一起想想。</h2>
+            </div>
+            <button type="button" id="reset-chat" class="secondary-button">
+              新对话
+            </button>
+          </div>
+          <div class="notice info" id="chat-config-note">正在连接…</div>
+          <div
+            id="chat-messages"
+            class="chat-messages"
+            role="log"
+            aria-live="polite"
+          >
+            <div class="chat-message assistant">
+              <span class="chat-avatar">港</span>
+              <div>
+                <strong>港行助手</strong>
+                <p>
+                  想去哪儿？告诉我时间、地点和同行的人，一起看看天气、吃什么、怎么走。
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="chat-suggestions">
+            <button
+              type="button"
+              data-prompt="今天从沙田去尖沙咀，帮我查天气、附近美食和港铁路线。"
+            >
+              尖沙咀的一日出行</button
+            ><button
+              type="button"
+              data-prompt="明天去西贡，查一下天气预报和附近美食。"
+            >
+              明天去西贡
+            </button>
+          </div>
+          <form id="chat-form" class="chat-composer">
+            <label class="sr-only" for="chat-input">输入你的问题</label
+            ><textarea
+              id="chat-input"
+              rows="2"
+              maxlength="3000"
+              placeholder="例如：今天从沙田去尖沙咀，有什么餐厅，港铁怎么坐？"
+            ></textarea>
+            <div>
+              <span>Enter 发送 · Shift + Enter 换行</span
+              ><button type="submit" id="chat-send" class="primary-button">
+                发送 <svg><use href="#i-arrow" /></svg>
+              </button>
+            </div>
+          </form>
+        </section>
+        <footer class="page-footer">
+          <span>港行 · 香港天气与出行</span>
+          <p>天气与港铁以最新发布资料为准。</p>
+          <span>HONG KONG, YOUR WAY</span>
+        </footer>
+      </main>
+    </div>
+    <div id="toast" class="toast" role="status" hidden></div>
+  </body>
+</html>
