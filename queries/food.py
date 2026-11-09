@@ -38,7 +38,7 @@ def collect_food(
         f'nwr["amenity"="{amenity}"](around:{radius_m},{lat:.6f},{lon:.6f});'
         for amenity in kinds
     )
-    query = f"[out:json][timeout:5];({clauses});out center;"
+    query = f"[out:json][timeout:25];({clauses});out center;"
     try:
         data = post_overpass(query)
     except (OSError, URLError, TimeoutError, RuntimeError, ValueError) as exc:

@@ -45,7 +45,8 @@ SYSTEM_PROMPT = (
     "没有具体地名时，请对方补充一个香港地名后再查。"
     "不要编造数字、站名或警告。"
     "回答天气数字时说明气象站和距离。"
-    "用户问题里如果附带了景点资料，推荐去处时只能使用这些资料，并说明景点距离。"
+    "用户问题里如果附带了景点资料，推荐去处时只能使用 data 和 nearby 里的资料，并说明景点距离。"
+    "nearby 是按直线距离选出的最近「看」和「玩」。data 没有该地点本身的景点时，推荐 nearby，写出 distance_km，说明这些是附近地点，不要拒绝，也不要说成该地点内部的景点。"
     "用户在问去处或游玩，但问题里没有景点资料、也没有具体地名时，不要拒绝，请对方补充一个香港地名后再查。不要自己编造景点。"
     "问去处或安排行程时，天气工具也已提供。提到气温、风雨或警告前必须先调用天气工具，只根据工具结果回答。"
     "若用户问当前天气是否适合前往，必须调用 get_weather_info 的 current 获取实时天气，再结合景点资料回答。"
@@ -100,90 +101,123 @@ def openai_tools(mcp_tools) -> list[dict]:
 
 def classify_question(llm, question: str) -> tuple[list[str], str | None]:
     """用户提问后先判断类型。包含游玩时同时抽出地名。"""
-    # Fast local routing removes an entire paid model round trip.
-    q = question.lower()
-    groups = {
-        "weather": [
-            "天气",
-            "天氣",
-            "温度",
-            "溫度",
-            "气温",
-            "幾度",
-            "多少度",
-            "湿度",
-            "濕度",
-            "下雨",
-            "警告",
-            "weather",
-            "temperature",
-            "rain",
+    response = llm.chat.completions.create(
+        model="deepseek-chat",
+        temperature=0,
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": CLASSIFY_PROMPT},
+            {"role": "user", "content": question},
         ],
-        "food": ["吃", "食", "餐", "咖啡", "喝", "food", "restaurant", "cafe", "eat"],
-        "outing": [
-            "景点",
-            "景點",
-            "游玩",
-            "遊玩",
-            "去处",
-            "去處",
-            "逛",
-            "室内",
-            "室內",
-            "museum",
-            "attraction",
-            "visit",
-            "things to do",
-        ],
-        "transport": [
-            "怎么走",
-            "怎麼走",
-            "怎么去",
-            "怎麼去",
-            "步行",
-            "走路",
-            "驾车",
-            "開車",
-            "开车",
-            "騎",
-            "骑",
-            "港铁",
-            "港鐵",
-            "地铁",
-            "地鐵",
-            "到站",
-            "路线",
-            "路線",
-            "walking",
-            "driving",
-            "cycling",
-            "mtr",
-            "route",
-        ],
-    }
-    kinds = [name for name, words in groups.items() if any(word in q for word in words)]
-    aliases = {
-        "香港理工大学": ["香港理工大学", "香港理工大學", "香港理工", "理工", "polyu"],
-        "黄埔": ["黄埔", "黃埔", "whampoa"],
-        "尖沙咀": ["尖沙咀", "尖沙嘴", "tst", "tsim sha tsui"],
-        "沙田": ["沙田", "sha tin"],
-        "中环": ["中环", "中環", "central"],
-        "旺角": ["旺角", "mong kok"],
-        "西贡": ["西贡", "西貢", "sai kung"],
-    }
-    matches = [
-        (max(len(a) for a in words if a in q), name)
-        for name, words in aliases.items()
-        if any(a in q for a in words)
-    ]
-    place = max(matches)[1] if matches else None
-    if place is None:
-        match = re.search(
-            r"(?:在|去)?([^，。？！?]{2,24}?)(?:附近|有什么|有什麼)", question
-        )
-        if match:
-            place = match.group(1).strip()
+    )
+    content = response.choices[0].message.content or ""
+    try:
+        data = json.loads(content)
+    except json.JSONDecodeError:
+        return ["weather"], None
+    raw = data.get("type")
+    if isinstance(raw, str):
+        raw = [raw]
+    if not isinstance(raw, list):
+        raw = []
+    kinds = [name for name in ("weather", "outing", "food", "transport") if name in raw]
+    if not kinds:
+        kinds = ["weather"]
+    if "outing" not in kinds:
+        return kinds, None
+    place = data.get("place")
+    if not isinstance(place, str):
+        return kinds, None
+    place = place.strip()
+    if place in {"", "现在", "今天", "这个", "什么", "哪里", "天气"}:
+        return kinds, None
     return kinds, place
+# def classify_question(llm, question: str) -> tuple[list[str], str | None]:
+#     """用户提问后先判断类型。包含游玩时同时抽出地名。"""
+#     # Fast local routing removes an entire paid model round trip.
+#     q = question.lower()
+#     groups = {
+#         "weather": [
+#             "天气",
+#             "天氣",
+#             "温度",
+#             "溫度",
+#             "气温",
+#             "幾度",
+#             "多少度",
+#             "湿度",
+#             "濕度",
+#             "下雨",
+#             "警告",
+#             "weather",
+#             "temperature",
+#             "rain",
+#         ],
+#         "food": ["吃", "食", "餐", "咖啡", "喝", "food", "restaurant", "cafe", "eat"],
+#         "outing": [
+#             "景点",
+#             "景點",
+#             "游玩",
+#             "遊玩",
+#             "去处",
+#             "去處",
+#             "逛",
+#             "室内",
+#             "室內",
+#             "museum",
+#             "attraction",
+#             "visit",
+#             "things to do",
+#         ],
+#         "transport": [
+#             "怎么走",
+#             "怎麼走",
+#             "怎么去",
+#             "怎麼去",
+#             "步行",
+#             "走路",
+#             "驾车",
+#             "開車",
+#             "开车",
+#             "騎",
+#             "骑",
+#             "港铁",
+#             "港鐵",
+#             "地铁",
+#             "地鐵",
+#             "到站",
+#             "路线",
+#             "路線",
+#             "walking",
+#             "driving",
+#             "cycling",
+#             "mtr",
+#             "route",
+#         ],
+#     }
+#     kinds = [name for name, words in groups.items() if any(word in q for word in words)]
+#     aliases = {
+#         "香港理工大学": ["香港理工大学", "香港理工大學", "香港理工", "理工", "polyu"],
+#         "黄埔": ["黄埔", "黃埔", "whampoa"],
+#         "尖沙咀": ["尖沙咀", "尖沙嘴", "tst", "tsim sha tsui"],
+#         "沙田": ["沙田", "sha tin"],
+#         "中环": ["中环", "中環", "central"],
+#         "旺角": ["旺角", "mong kok"],
+#         "西贡": ["西贡", "西貢", "sai kung"],
+#     }
+#     matches = [
+#         (max(len(a) for a in words if a in q), name)
+#         for name, words in aliases.items()
+#         if any(a in q for a in words)
+#     ]
+#     place = max(matches)[1] if matches else None
+#     if place is None:
+#         match = re.search(
+#             r"(?:在|去)?([^，。？！?]{2,24}?)(?:附近|有什么|有什麼)", question
+#         )
+#         if match:
+#             place = match.group(1).strip()
+#     return kinds, place
 
 
 def tools_for(kinds: list[str], tools: list[dict]) -> list[dict]:
@@ -255,6 +289,7 @@ def prepare_question(
 ) -> tuple[list[str], str]:
     ident = _begin(notes, "正在整理查询需求")
     kinds, place = classify_question(llm, question)
+    print("分类",kinds, place)
     _end(notes, ident)
     if os.getenv("ENABLE_RAG", "1") == "0":
         return kinds, question

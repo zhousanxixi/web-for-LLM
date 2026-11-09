@@ -1432,14 +1432,25 @@ $("#chat-form").addEventListener("submit", async (event) => {
     live.finish(data.seconds);
     answer.hidden = false;
     answer.textContent = data.message || "";
-    if (item._evidence?.data?.length) {
+    const evidence = item._evidence;
+    if (evidence?.data?.length || evidence?.nearby?.length) {
       const refs = el("details", "trace-list");
       refs.append(el("summary", "", "参考资料"));
-      for (const doc of item._evidence.data)
+      for (const doc of evidence.data || [])
         refs.append(
           link(`${doc.name} [${doc.chunk_id}]`, doc.source),
           el("p", "", doc.source_date || ""),
         );
+      if (evidence.nearby?.length) {
+        refs.append(el("p", "", "按距离选出的附近景点"));
+        for (const doc of evidence.nearby)
+          refs.append(
+            link(
+              `${doc.name} [${doc.chunk_id}] 约 ${Number(doc.distance_km).toFixed(1)} 公里`,
+              doc.source,
+            ),
+          );
+      }
       body.append(refs);
     }
   } catch (e) {
