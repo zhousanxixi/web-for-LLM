@@ -259,7 +259,7 @@ def tools_for(kinds: list[str], tools: list[dict]) -> list[dict]:
                 in {"get_route", "get_mtr_route", "get_mtr_next_train"}
             ]
         )
-    if os.getenv("ENABLE_RAG", "1") != "0":
+    if "outing" in kinds and os.getenv("ENABLE_RAG", "1") != "0":
         add(
             [
                 tool
@@ -291,9 +291,9 @@ def prepare_question(
     kinds, place = classify_question(llm, question)
     print("分类",kinds, place)
     _end(notes, ident)
-    if os.getenv("ENABLE_RAG", "1") == "0":
+    if os.getenv("ENABLE_RAG", "1") == "0" or "outing" not in kinds:
         return kinds, question
-    if "outing" in kinds and place:
+    if place:
         return kinds, place_context(place, question, notes)
     from vector_rag import search
 

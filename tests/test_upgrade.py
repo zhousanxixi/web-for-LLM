@@ -241,7 +241,11 @@ class ChatTests(unittest.IsolatedAsyncioTestCase):
         ]
         self.assertEqual(
             [t["function"]["name"] for t in tools_for(["food"], tools)],
-            ["get_nearby_food", "search_travel_knowledge"],
+            ["get_nearby_food"],
+        )
+        self.assertEqual(
+            [t["function"]["name"] for t in tools_for(["outing"], tools)],
+            ["get_weather_info", "search_travel_knowledge"],
         )
 
     def test_mcp_only_disables_retrieval_tool(self):
