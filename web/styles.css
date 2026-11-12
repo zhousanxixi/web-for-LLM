@@ -2218,3 +2218,15 @@ html[lang="en"] .sidebar-note strong {
     animation: none !important;
   }
 }
+
+/* Answer emphasis inherits readable body sizing instead of the speaker label style. */
+.chat-message .chat-answer strong {
+  font-size: inherit;
+  font-weight: 700;
+  color: inherit;
+}
+.chat-answer a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

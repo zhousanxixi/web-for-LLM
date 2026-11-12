@@ -465,31 +465,28 @@ async def chat(request):
     queue: asyncio.Queue = asyncio.Queue()
     notes = LiveNotes(asyncio.get_running_loop(), queue)
 
+    recent_history = list(item["messages"])
+
     async def work() -> None:
         try:
             item["last_used"] = time.monotonic()
             tracer = TracingClient(state.services)
             started = time.monotonic()
             try:
-                kinds, content = await asyncio.to_thread(
-                    prepare_question, state.llm, message.strip(), notes
-                )
-                if language == "en":
-                    content += "\nPlease answer this turn in English, retaining source links and units."
-                reply = await asyncio.wait_for(
-                    answer(
-                        tracer,
-                        state.llm,
-                        tools_for(kinds, state.tool_defs),
-                        item["messages"],
-                        content,
-                        notes,
-                    ),
-                    timeout=180,
-                )
+                async with asyncio.timeout(90):
+                    kinds, content = await asyncio.to_thread(
+                        prepare_question, state.llm, message.strip(), notes,
+                        recent_history,
+                    )
+                    if language == "en":
+                        content += "\nPlease answer this turn in English, retaining source links and units."
+                    reply = await answer(
+                        tracer, state.llm, tools_for(kinds, state.tool_defs),
+                        item["messages"], content, notes,
+                    )
             except TimeoutError:
                 await queue.put(
-                    {"type": "error", "message": "本轮回答超时，请缩小问题范围。"}
+                    {"type": "error", "message": "本轮查询等待超过90秒，请缩小问题范围或重试。"}
                 )
             except APIError:
                 await queue.put(

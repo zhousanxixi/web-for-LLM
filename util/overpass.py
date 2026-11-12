@@ -35,7 +35,7 @@ def post_overpass(query):
         with _LOCK:
             if key in _CACHE and _CACHE[key][0] > time.monotonic():
                 return copy.deepcopy(_CACHE[key][1])
-        deadline = time.monotonic() + float(os.getenv("OVERPASS_TOTAL_TIMEOUT", "30"))
+        deadline = time.monotonic() + float(os.getenv("OVERPASS_TOTAL_TIMEOUT", "12"))
         cafile = Path("/etc/ssl/cert.pem")
         context = ssl.create_default_context(
             cafile=str(cafile) if cafile.exists() else None
@@ -58,14 +58,14 @@ def post_overpass(query):
             )
             try:
                 with urllib.request.urlopen(
-                    req, timeout=min(26, remaining), context=context
+                    req, timeout=min(6, remaining), context=context
                 ) as response:
                     raw = response.read(8_000_001)
                 if len(raw) > 8_000_000:
                     raise ValueError("Response too large")
                 data = json.loads(raw)
                 elements = data.get("elements")
-                if not isinstance(elements, list) or (data.get("remark") and not elements):
+                if not isinstance(elements, list) or data.get("remark"):
                     raise ValueError("Incomplete Overpass response")
                 with _LOCK:
                     if len(_CACHE) >= 64:

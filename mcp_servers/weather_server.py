@@ -107,24 +107,33 @@ def get_nearest_temperature(place: str) -> str:
     located = geocode_place(place)
     if located is None:
         return f"没有找到地名 {place}。"
-    station = nearest_station(
-        float(located["latitude"]),
-        float(located["longitude"]),
-    )
     try:
         rows = latest_temperatures(fetch_text(TEMPERATURE_CSV_URL))
+        valid = {}
+        for row in rows:
+            try:
+                value = float(row["Air Temperature(degree Celsius)"])
+                if not (-100 < value < 100):
+                    continue
+            except (TypeError, ValueError, KeyError):
+                continue
+            valid[row["Automatic Weather Station"]] = row
+        stations = load_stations()
+        available = [station for station in stations if station["name"] in valid]
+        if not available:
+            return "当前没有可匹配的有效气温观测，请稍后重试。"
+        closest = nearest_station(float(located["latitude"]), float(located["longitude"]), stations)
+        station = nearest_station(float(located["latitude"]), float(located["longitude"]), available)
     except (OSError, URLError, TimeoutError, ValueError) as exc:
         return _failed(exc)
-    matched = [
-        row
-        for row in rows
-        if row["Automatic Weather Station"] == station["name"]
-    ]
-    if not matched:
-        return f"找到最近气象站 {station['name']}，但当前气温数据里没有该站。"
-    row = matched[0]
+    row = valid[station["name"]]
+    fallback_note = (
+        f"最近站 {closest['name']} 暂无有效观测，使用最近有数据的参考站。\n"
+        if closest["name"] != station["name"] else ""
+    )
     return (
-        f"查询地名: {place}\n"
+        fallback_note
+        + f"查询地名: {place}\n"
         f"匹配地点: {located['name']}\n"
         f"最近气象站: {station['name']}\n"
         f"距离: 约 {float(station['distance_km']):.1f} 公里\n"

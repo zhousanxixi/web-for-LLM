@@ -1324,6 +1324,11 @@ function addMessage(
     ),
     el("p", original ? "source-text" : "", text),
   );
+  if (role === "assistant") {
+    const answer = body.lastElementChild;
+    answer.classList.add("chat-answer");
+    window.chatFormat.render(answer, text);
+  }
   if (trace?.length) {
     const details = el("details", "trace-list");
     details.append(el("summary", "", "查询记录"));
@@ -1397,7 +1402,20 @@ $("#chat-form").addEventListener("submit", async (event) => {
   const item = el("div", "chat-message assistant");
   const body = el("div");
   const live = liveThought();
-  const answer = el("p", "source-text", "");
+  const answer = el("p", "source-text chat-answer", "");
+  let answerText = "";
+  let answerFrame = null;
+  const cancelAnswerFrame = () => {
+    if (answerFrame !== null) cancelAnimationFrame(answerFrame);
+    answerFrame = null;
+  };
+  const scheduleAnswer = () => {
+    if (answerFrame !== null) return;
+    answerFrame = requestAnimationFrame(() => {
+      answerFrame = null;
+      window.chatFormat.render(answer, answerText);
+    });
+  };
   answer.hidden = true;
   body.append(live.element, el("strong", "", "港行助手"), answer);
   item.append(el("span", "chat-avatar", "港"), body);
@@ -1413,11 +1431,14 @@ $("#chat-form").addEventListener("submit", async (event) => {
       (event) => {
         if (event.type === "token") {
           answer.hidden = false;
-          answer.textContent += event.text;
+          answerText += event.text;
+          scheduleAnswer();
           return;
         }
         if (event.type === "clear_tokens") {
-          answer.textContent = "";
+          cancelAnswerFrame();
+          answerText = "";
+          answer.replaceChildren();
           answer.hidden = true;
           return;
         }
@@ -1431,14 +1452,15 @@ $("#chat-form").addEventListener("submit", async (event) => {
     );
     live.finish(data.seconds);
     answer.hidden = false;
-    answer.textContent = data.message || "";
+    cancelAnswerFrame();
+    window.chatFormat.render(answer, data.message || "");
     const evidence = item._evidence;
     if (evidence?.data?.length || evidence?.nearby?.length) {
       const refs = el("details", "trace-list");
       refs.append(el("summary", "", "参考资料"));
       for (const doc of evidence.data || [])
         refs.append(
-          link(`${doc.name} [${doc.chunk_id}]`, doc.source),
+          link(doc.name, doc.source),
           el("p", "", doc.source_date || ""),
         );
       if (evidence.nearby?.length) {
@@ -1446,7 +1468,7 @@ $("#chat-form").addEventListener("submit", async (event) => {
         for (const doc of evidence.nearby)
           refs.append(
             link(
-              `${doc.name} [${doc.chunk_id}] 约 ${Number(doc.distance_km).toFixed(1)} 公里`,
+              `${doc.name} 约 ${Number(doc.distance_km).toFixed(1)} 公里`,
               doc.source,
             ),
           );
@@ -1457,6 +1479,7 @@ $("#chat-form").addEventListener("submit", async (event) => {
     live.finish();
     item.classList.add("error");
     answer.hidden = false;
+    cancelAnswerFrame();
     answer.textContent = e.message;
   } finally {
     state.chatBusy = false;
